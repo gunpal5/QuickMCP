@@ -6,7 +6,7 @@
         <Nullable>enable</Nullable>
         <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
         <PackAsTool>true</PackAsTool>
-        <Version>0.2.1</Version>
+        <Version>0.2.2</Version>
         <ToolCommandName>quickmcp</ToolCommandName>       
     </PropertyGroup>
     <PropertyGroup>
