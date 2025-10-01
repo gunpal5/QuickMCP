@@ -21,8 +21,11 @@ public class McpServerApiTool : McpServerTool
         this._caller = apiCaller;
         ProtocolTool = info.ToProtocolTool();
     }
+
     /// <inheritdoc/>
-    public override async ValueTask<CallToolResponse> InvokeAsync(RequestContext<CallToolRequestParams> request,
+    public override IReadOnlyList<object> Metadata => Array.Empty<object>();
+    /// <inheritdoc/>
+    public override async ValueTask<CallToolResult> InvokeAsync(RequestContext<CallToolRequestParams> request,
                                                                   CancellationToken cancellationToken = new CancellationToken())
     {
         string url = _toolInfo.Url;

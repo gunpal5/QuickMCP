@@ -9,6 +9,8 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using System.Net.Http.Headers;
 using Moq;
+using QuickMCP.Authentication;
+
 namespace QuickMCP.Tests;
 
 public class McpToolTests
@@ -17,7 +19,7 @@ public class McpToolTests
     public async Task ShouldCallMcpTool_Get_WithQuery()
     {
 
-        var mockServer = new Mock<IMcpServer>().Object;
+        var mockServer = new Mock<McpServer>().Object;
 
         var builder = await McpServerInfoBuilder.ForOpenApi("Test_Server")
             .FromUrl("https://petstore.swagger.io/v2/swagger.json").OnlyForPaths(["pet"]).BuildAsync();
@@ -26,7 +28,8 @@ public class McpToolTests
         //Query test
         var first = tools.FirstOrDefault(s => s.ProtocolTool.Name.Contains("status", StringComparison.OrdinalIgnoreCase));
         // Update the instantiation of RequestContext to include all required parameters based on its definition.
-        var context = new RequestContext<CallToolRequestParams>(mockServer);
+        var jsonRpcRequest = new JsonRpcRequest { Method = "tools/call", Id = new RequestId("test-1") };
+        var context = new RequestContext<CallToolRequestParams>(mockServer, jsonRpcRequest);
         context.Params = new CallToolRequestParams
         {
             Name = first.ProtocolTool.Name,
@@ -42,7 +45,7 @@ public class McpToolTests
         val.ShouldNotBeNull();
 
         val.Content.ShouldNotBeNull();
-        val.Content[0].Text.ShouldContain("sold");
+        (val.Content[0] as TextContentBlock)?.Text.ShouldContain("sold");
     }
 
     // [Fact]
@@ -85,8 +88,9 @@ public class McpToolTests
 
         //Post
         var third = tools.FirstOrDefault(s => s.ProtocolTool.Name.Contains("addPet", StringComparison.OrdinalIgnoreCase));
-        var mockServer = new Mock<IMcpServer>().Object;
-        var context = new RequestContext<CallToolRequestParams>(mockServer);
+        var mockServer = new Mock<McpServer>().Object;
+        var jsonRpcRequest = new JsonRpcRequest { Method = "tools/call", Id = new RequestId("test-1") };
+        var context = new RequestContext<CallToolRequestParams>(mockServer, jsonRpcRequest);
         context.Params = new CallToolRequestParams()
         {
             Name = third.ProtocolTool.Name,
@@ -102,8 +106,37 @@ public class McpToolTests
         var thirdResult = await third.InvokeAsync(context);
 
         thirdResult.Content.ShouldNotBeNull();
-        thirdResult.Content[0].Text.ShouldContain("Buddy");
+        (thirdResult.Content[0] as TextContentBlock)?.Text.ShouldContain("Buddy");
     }
+
+    // [Fact]
+    // public async Task ShouldCallMcpTool_Post_WithBody_Sneakinn()
+    // {
+    //     var builder = await McpServerInfoBuilder.ForOpenApi("Test_Server")
+    //         .FromUrl("https://api.sneakinn.in/swagger/v1/swagger.json").WithBaseUrl("https://api.sneakinn.in").AddAuthentication(new BearerTokenAuthenticator("")).BuildAsync();
+    //     var tools = builder.GetMcpTools().ToList();
+    //
+    //     //Post
+    //     var third = tools.FirstOrDefault(s => s.ProtocolTool.Name.Contains("rider", StringComparison.OrdinalIgnoreCase));
+    //     var mockServer = new Mock<McpServer>().Object;
+    //     var jsonRpcRequest = new JsonRpcRequest { Method = "tools/call", Id = new RequestId("test-1") };
+    //     var context = new RequestContext<CallToolRequestParams>(mockServer, jsonRpcRequest);
+    //     context.Params = new CallToolRequestParams()
+    //     {
+    //         Name = third.ProtocolTool.Name,
+    //         Arguments = new Dictionary<string, JsonElement>()
+    //         {
+    //             ["query"] = JsonDocument
+    //                 .Parse("{\"maxResults\":50}")
+    //                 .RootElement
+    //         }
+    //     };
+    //
+    //     var thirdResult = await third.InvokeAsync(context);
+    //
+    //     thirdResult.Content.ShouldNotBeNull();
+    //     (thirdResult.Content[0] as TextContentBlock)?.Text.ShouldContain("Buddy");
+    // }
 
     [Fact]
     public async Task ShouldCallMcpTool_Post_WithBody2()
@@ -137,8 +170,9 @@ public class McpToolTests
 
         //Put
         var third = tools.FirstOrDefault(s => s.ProtocolTool.Name.Contains("updatePet", StringComparison.OrdinalIgnoreCase));
-        var mockServer = new Mock<IMcpServer>().Object;
-        var context = new RequestContext<CallToolRequestParams>(mockServer);
+        var mockServer = new Mock<McpServer>().Object;
+        var jsonRpcRequest = new JsonRpcRequest { Method = "tools/call", Id = new RequestId("test-1") };
+        var context = new RequestContext<CallToolRequestParams>(mockServer, jsonRpcRequest);
         context.Params = new CallToolRequestParams()
         {
             Name = third.ProtocolTool.Name,
@@ -152,7 +186,7 @@ public class McpToolTests
         var thirdResult = await third.InvokeAsync(context);
 
         thirdResult.Content.ShouldNotBeNull();
-        thirdResult.Content[0].Text.ShouldContain("Sparky");
+        (thirdResult.Content[0] as TextContentBlock)?.Text.ShouldContain("Sparky");
     }
 
     [Fact]
@@ -165,8 +199,9 @@ public class McpToolTests
         
         //Put
         var third = tools.FirstOrDefault(s => s.ProtocolTool.Name.Contains("getAuthors", StringComparison.OrdinalIgnoreCase));
-        var mockServer = new Mock<IMcpServer>().Object;
-        var context = new RequestContext<CallToolRequestParams>(mockServer);
+        var mockServer = new Mock<McpServer>().Object;
+        var jsonRpcRequest = new JsonRpcRequest { Method = "tools/call", Id = new RequestId("test-1") };
+        var context = new RequestContext<CallToolRequestParams>(mockServer, jsonRpcRequest);
         context.Params = new CallToolRequestParams()
         {
             Name = third.ProtocolTool.Name,
@@ -183,7 +218,7 @@ public class McpToolTests
         var thirdResult = await third.InvokeAsync(context);
 
         thirdResult.Content.ShouldNotBeNull();
-        thirdResult.Content[0].Text.ShouldContain("db_response_time_ms");
+        (thirdResult.Content[0] as TextContentBlock)?.Text.ShouldContain("db_response_time_ms");
     }
     // [Fact]
     // public async Task ShouldCallMcpTool_Delete_WithBody()

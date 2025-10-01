@@ -77,8 +77,8 @@ public class HttpApiCaller
     /// <param name="query">Query parameters for the API call.</param>
     /// <param name="pathParam">Path parameters for the API call.</param>
     /// <param name="cancellationToken">Cancellation token to cancel the request.</param>
-    /// <returns>A task that represents the asynchronous operation, returning a CallToolResponse.</returns>
-    public async Task<CallToolResponse> Call(HttpMethod method,
+    /// <returns>A task that represents the asynchronous operation, returning a CallToolResult.</returns>
+    public async Task<CallToolResult> Call(HttpMethod method,
                                             string url,
                                             Dictionary<string, JsonElement>? content = null,
                                             string mimeType = "application/json",
@@ -112,47 +112,47 @@ public class HttpApiCaller
         if (!response.IsSuccessStatusCode)
         {
             _logger?.LogError($"HTTP error {response.StatusCode} from {url}: {responseContent}");
-            return new CallToolResponse()
+            return new CallToolResult()
             {
                 IsError = true,
-                Content = new List<Content>([
-                    new Content()
+                Content = [
+                    new TextContentBlock()
                     {
                         Type = "text",
                         Text = $"HTTP error {response.StatusCode} from {url}: {responseContent}"
                     }
-                ])
+                ]
             };
         }
 
         try
         {
-            return new CallToolResponse()
+            return new CallToolResult()
             {
-                Content = new List<Content>([
-                    new Content()
+                Content = [
+                    new TextContentBlock()
                     {
                         Type = "text",
                         Text = responseContent,
                     }
-                ])
+                ]
             };
         }
         catch (JsonException ex)
         {
             _logger?.LogError(
                 $"Error deserializing response from {url}: {ex.Message}. Response was: {responseContent}");
-            return new CallToolResponse()
+            return new CallToolResult()
             {
                 IsError = true,
-                Content = new List<Content>([
-                    new Content()
+                Content = [
+                    new TextContentBlock()
                     {
                         Type = "text",
                         Text =
                             $"Error deserializing response from {url}: {ex.Message}. Response was: {responseContent}"
                     }
-                ])
+                ]
             };
         }
     }

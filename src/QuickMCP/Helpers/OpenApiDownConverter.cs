@@ -108,7 +108,7 @@ namespace QuickMCP.Helpers
         /// <param name="openapiDocument">OpenAPI document as JObject</param>
         /// <param name="options">Converter options</param>
         /// <exception cref="Exception">If the scopeDescriptionFile cannot be read or parsed</exception>
-        public Converter(JObject openapiDocument, ConverterOptions options = null)
+        public Converter(JObject openapiDocument, ConverterOptions? options = null)
         {
             options = options ?? new ConverterOptions();
             

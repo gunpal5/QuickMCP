@@ -245,7 +245,7 @@ internal class PromptsRegistry
         {
             foreach (var msg in prompt.Messages)
             {
-                var messageText = msg.Content.Text;
+                var messageText = msg.Content is TextContentBlock textBlock ? textBlock.Text : string.Empty;
                 if (prompt.Arguments != null && prompt.Arguments.Count > 0)
                 {
                     foreach (var arg in prompt.Arguments)
@@ -261,9 +261,9 @@ internal class PromptsRegistry
                 var newMsg = new PromptMessage
                 {
                     Role = msg.Role,
-                    Content = new Content
+                    Content = new TextContentBlock
                     {
-                        Type = msg.Content.Type,
+                        Type = "text",
                         Text = messageText
                     }
                 };
@@ -293,7 +293,7 @@ internal class PromptsRegistry
         messages.Add(new PromptMessage()
         {
             Role = Role.User,
-            Content = new Content()
+            Content = new TextContentBlock()
             {
                 Type = "text",
                 Text = prompt.Content

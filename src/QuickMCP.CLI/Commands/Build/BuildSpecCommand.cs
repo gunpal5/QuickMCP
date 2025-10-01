@@ -17,9 +17,9 @@ public class BuildSpecCommand:AsyncCommand<BuildSpecCommandSettings>
         using var firecrawlApi = new FirecrawlApp(apiKey:
             settings.FirecrawlApiKey ??
             throw new InvalidOperationException("Please set FIRECRAWL_API_KEY environment variable or pass it as a parameter."));
+        var scrapeRequest = new Firecrawl.ScrapeAndExtractFromUrlRequest2(settings.DocumentationUrl);
         var firecrawlResponse = await firecrawlApi.Scraping.ScrapeAndExtractFromUrlAsync(
-            settings.DocumentationUrl,
-            waitFor: 15000).ConfigureAwait(false);
+            scrapeRequest).ConfigureAwait(false);
 
         var markdown = firecrawlResponse.Data?.Markdown ?? throw new InvalidOperationException("[red]No markdown data found.[/]");
 
@@ -33,12 +33,12 @@ public class BuildSpecCommand:AsyncCommand<BuildSpecCommandSettings>
         if(response == null)
             throw new InvalidOperationException("[red]No response from Google AI[/]");
         var specs = response.Text();
-        var extension = response.Text.Contains("yaml")? "yaml": "json";
+        var extension = response.Text().Contains("yaml")? "yaml": "json";
         var codeBlocks = MarkdownExtractor.ExtractCodeBlocks(markdown);
         if (codeBlocks.Count > 0)
         {
             var block = codeBlocks.FirstOrDefault();
-            specs = response.Text.Replace("```json", "").Replace("```yaml","").Replace("```","");
+            specs = response.Text().Replace("```json", "").Replace("```yaml","").Replace("```","");
             extension =specs.Trim().StartsWith("{")? "json": "yaml";
             if (!string.IsNullOrWhiteSpace(block.Language))
             {

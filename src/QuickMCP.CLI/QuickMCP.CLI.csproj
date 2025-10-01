@@ -26,12 +26,12 @@
         <None Include="$(MSBuildThisFileDirectory)..\..\README.md" Pack="true" PackagePath="\" Visible="false"/>
     </ItemGroup>
     <ItemGroup>
-      <PackageReference Include="Firecrawl" Version="1.1.1-dev.4" />
-      <PackageReference Include="Google_GenerativeAI" Version="2.5.5" />
-      <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.0-preview.2.25163.2" />
-      <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="10.0.0-preview.2.25163.2" />
-      <PackageReference Include="Spectre.Console" Version="0.49.2-preview.0.77" />
-      <PackageReference Include="Spectre.Console.Cli" Version="0.49.2-preview.0.77" />
+      <PackageReference Include="Firecrawl" Version="1.1.2-dev.2" />
+      <PackageReference Include="Google_GenerativeAI" Version="3.2.0" />
+      <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.9" />
+      <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="9.0.9" />
+      <PackageReference Include="Spectre.Console" Version="0.51.2-preview.0.1" />
+      <PackageReference Include="Spectre.Console.Cli" Version="0.51.2-preview.0.1" />
       <PackageReference Include="vertical-spectreconsolelogger" Version="0.10.1-dev.20241201.35" />
     </ItemGroup>
     <ItemGroup>

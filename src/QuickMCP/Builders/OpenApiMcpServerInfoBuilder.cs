@@ -131,8 +131,8 @@ public class OpenApiMcpServerInfoBuilder : HttpMcpServerInfoBuilder
             }
 
             var fileContent = await httpResponse.Content.ReadAsStringAsync();
-            
-            fileContent = ConvertToOpenApi30Json(url,fileContent);
+
+            fileContent = ConvertToOpenApi30Json(url, fileContent);
             var result = new OpenApiStringReader().Read(fileContent, out var diagnostic);
 
 
@@ -171,12 +171,11 @@ public class OpenApiMcpServerInfoBuilder : HttpMcpServerInfoBuilder
             var fileContent = await File.ReadAllTextAsync(filePath);
 #endif
 
-            fileContent = ConvertToOpenApi30Json(filePath,fileContent);
+            fileContent = ConvertToOpenApi30Json(filePath, fileContent);
             var reader = new OpenApiStringReader(new OpenApiReaderSettings()
             {
-                
             });
-            
+
             var result = reader.Read(fileContent, out var diagnostic);
 
             if (diagnostic.Errors.Count > 0)
@@ -192,8 +191,6 @@ public class OpenApiMcpServerInfoBuilder : HttpMcpServerInfoBuilder
         }
         catch (Exception ex)
         {
-            
-            
             Logger?.LogError(ex, "Failed to load OpenAPI spec from file: {FilePath}", filePath);
             return null;
         }
@@ -399,6 +396,7 @@ public class OpenApiMcpServerInfoBuilder : HttpMcpServerInfoBuilder
     {
         var operationsInfo = new Dictionary<string, OperationInfo>();
 
+
         foreach (var path in openApiDoc.Paths)
         {
             foreach (var operation in path.Value.Operations)
@@ -430,6 +428,7 @@ public class OpenApiMcpServerInfoBuilder : HttpMcpServerInfoBuilder
                 };
             }
         }
+
 
         return operationsInfo;
     }
@@ -530,67 +529,100 @@ public class OpenApiMcpServerInfoBuilder : HttpMcpServerInfoBuilder
     /// <returns>A JSON object representing the structure of the provided OpenAPI schema.</returns>
     private JsonObject ConvertOpenApiSchemaToJsonNode(OpenApiSchema? schema)
     {
+        return ConvertOpenApiSchemaToJsonNode(schema, new HashSet<OpenApiSchema>(ReferenceEqualityComparer.Instance));
+    }
+
+    /// <summary>
+    /// Converts an OpenAPI schema into a JSON node structure with circular reference detection.
+    /// </summary>
+    /// <param name="schema">The OpenAPI schema to be converted. Can be null.</param>
+    /// <param name="visited">Set of already visited schemas to prevent circular references.</param>
+    /// <returns>A JSON object representing the structure of the provided OpenAPI schema.</returns>
+    private JsonObject ConvertOpenApiSchemaToJsonNode(OpenApiSchema? schema, HashSet<OpenApiSchema> visited)
+    {
         if (schema == null)
         {
             return new JsonObject();
         }
 
-        var result = new JsonObject();
-        result["type"] = schema.Type; //.ToIdentifiers()?.FirstOrDefault() ?? "object";
-
-        if (schema.Description != null)
+        // Check for circular reference
+        if (visited.Contains(schema))
         {
-            result["description"] = schema.Description;
+            // Return a reference placeholder instead of recursing
+            return new JsonObject
+            {
+                ["type"] = schema.Type ?? "object",
+                ["description"] = schema.Description ?? "Circular reference detected"
+            };
         }
 
-        if (schema.Properties != null && schema.Properties.Count > 0)
+        // Mark this schema as visited
+        visited.Add(schema);
+
+        try
         {
-            var properties = new JsonObject();
-            foreach (var prop in schema.Properties)
+            var result = new JsonObject();
+            result["type"] = schema.Type; //.ToIdentifiers()?.FirstOrDefault() ?? "object";
+
+            if (schema.Description != null)
             {
-                properties[prop.Key] = ConvertOpenApiSchemaToJsonNode(prop.Value);
+                result["description"] = schema.Description;
             }
 
-            result["properties"] = properties;
-        }
-
-        if (schema.Items != null)
-        {
-            result["items"] = ConvertOpenApiSchemaToJsonNode(schema.Items);
-        }
-
-        if (schema.Required != null && schema.Required.Count > 0)
-        {
-            var requiredArray = new JsonArray();
-            foreach (var req in schema.Required)
+            if (schema.Properties != null && schema.Properties.Count > 0)
             {
-                requiredArray.Add(req);
-            }
-
-            result["required"] = requiredArray;
-        }
-
-        // Handle enum values
-        if (schema.Enum != null && schema.Enum.Count > 0)
-        {
-            var enumArray = new JsonArray();
-            foreach (var enumValue in schema.Enum)
-            {
-                if (enumValue != null)
+                var properties = new JsonObject();
+                foreach (var prop in schema.Properties)
                 {
-                    if (enumValue is OpenApiString stringValue)
-                    {
-                        enumArray.Add(stringValue.Value);
-                    }
-                    else
-                        enumArray.Add(enumValue.ToString());
+                    properties[prop.Key] = ConvertOpenApiSchemaToJsonNode(prop.Value, visited);
                 }
+
+                result["properties"] = properties;
             }
 
-            result["enum"] = enumArray;
-        }
+            if (schema.Items != null)
+            {
+                result["items"] = ConvertOpenApiSchemaToJsonNode(schema.Items, visited);
+            }
 
-        return result;
+            if (schema.Required != null && schema.Required.Count > 0)
+            {
+                var requiredArray = new JsonArray();
+                foreach (var req in schema.Required)
+                {
+                    requiredArray.Add(req);
+                }
+
+                result["required"] = requiredArray;
+            }
+
+            // Handle enum values
+            if (schema.Enum != null && schema.Enum.Count > 0)
+            {
+                var enumArray = new JsonArray();
+                foreach (var enumValue in schema.Enum)
+                {
+                    if (enumValue != null)
+                    {
+                        if (enumValue is OpenApiString stringValue)
+                        {
+                            enumArray.Add(stringValue.Value);
+                        }
+                        else
+                            enumArray.Add(enumValue.ToString());
+                    }
+                }
+
+                result["enum"] = enumArray;
+            }
+
+            return result;
+        }
+        finally
+        {
+            // Remove from visited set after processing to allow the same schema in different branches
+            visited.Remove(schema);
+        }
     }
 
     /// <summary>
