@@ -23,6 +23,7 @@ public static class AuthenticatorFactory
         Register(BearerTokenAuthenticator.GetMetadata(), BearerTokenAuthenticator.Create);
         Register(CustomHeaderAuthenticator.GetMetadata(), CustomHeaderAuthenticator.Create);
         Register(OAuth2ClientCredentialsAuthenticator.GetMetadata(), OAuth2ClientCredentialsAuthenticator.Create);
+        Register(OAuthGrantTypeAuthenticator.GetMetadata(), OAuthGrantTypeAuthenticator.Create);
     }
 
     /// <summary>
