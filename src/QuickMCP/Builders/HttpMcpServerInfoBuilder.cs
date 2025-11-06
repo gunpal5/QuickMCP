@@ -1,4 +1,5 @@
 ﻿using System.Text.Json;
+using Microsoft.Extensions.Logging;
 using ModelContextProtocol.Protocol;
 using QuickMCP.Abstractions;
 using QuickMCP.Authentication;
@@ -96,6 +97,35 @@ public abstract class HttpMcpServerInfoBuilder : BaseMcpServerInfoBuilder
 
         if (config.Authentication != null)
         {
+            // Replace environment variable placeholders in authentication settings
+            if (config.Authentication.Settings != null)
+            {
+                var updatedSettings = new Dictionary<string, string?>();
+                foreach (var setting in config.Authentication.Settings)
+                {
+                    var value = setting.Value;
+                    if (!string.IsNullOrEmpty(value) && value.Contains("{{") && value.Contains("}}"))
+                    {
+                        // Match {{VARIABLE_NAME}} pattern
+                        var pattern = @"\{\{([A-Za-z0-9_]+)\}\}";
+                        value = System.Text.RegularExpressions.Regex.Replace(value, pattern, match =>
+                        {
+                            var varName = match.Groups[1].Value;
+                            var envValue = Environment.GetEnvironmentVariable(varName);
+                            if (!string.IsNullOrEmpty(envValue))
+                            {
+                                Logger?.LogDebug("Replaced {{{{ {VarName} }}}} in authentication settings", varName);
+                                return envValue;
+                            }
+                            Logger?.LogWarning("Environment variable {VarName} not found in authentication settings", varName);
+                            return match.Value; // Keep original placeholder if env var not found
+                        });
+                    }
+                    updatedSettings[setting.Key] = value;
+                }
+                config.Authentication.Settings = updatedSettings;
+            }
+
             Authenticator = AuthenticatorFactory.Create(config.Authentication);
         }
 

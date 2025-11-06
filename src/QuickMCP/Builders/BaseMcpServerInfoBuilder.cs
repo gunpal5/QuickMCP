@@ -509,6 +509,9 @@ public abstract class BaseMcpServerInfoBuilder : IMcpServerInfoBuilder
 #else
             var configJson = await File.ReadAllTextAsync(configPath);
 #endif
+            // Replace environment variable placeholders
+            configJson = ReplaceEnvironmentVariables(configJson);
+
             var config = (T?)JsonSerializer.Deserialize(configJson, typeof(T), QuickMcpJsonSerializerContext.Default);
 
             if (config == null)
@@ -523,6 +526,34 @@ public abstract class BaseMcpServerInfoBuilder : IMcpServerInfoBuilder
             Logger?.LogError(ex, "Failed to load configuration from: {ConfigPath}", configPath);
             return null;
         }
+    }
+
+    /// <summary>
+    /// Replaces {{VARIABLE_NAME}} placeholders with environment variable values
+    /// </summary>
+    /// <param name="json">JSON string with placeholders</param>
+    /// <returns>JSON string with replaced values</returns>
+    private string ReplaceEnvironmentVariables(string json)
+    {
+        if (string.IsNullOrEmpty(json))
+            return json;
+
+        // Match {{VARIABLE_NAME}} pattern
+        var pattern = @"\{\{([A-Za-z0-9_]+)\}\}";
+        return System.Text.RegularExpressions.Regex.Replace(json, pattern, match =>
+        {
+            var varName = match.Groups[1].Value;
+            var envValue = Environment.GetEnvironmentVariable(varName);
+
+            if (!string.IsNullOrEmpty(envValue))
+            {
+                Logger?.LogDebug("Replaced {{{{ {VarName} }}}} with environment variable value", varName);
+                return envValue;
+            }
+
+            Logger?.LogWarning("Environment variable {VarName} not found, keeping placeholder", varName);
+            return match.Value; // Keep original placeholder if env var not found
+        });
     }
 
     /// <summary>
