@@ -10,6 +10,7 @@ namespace QuickMCP.Tests;
 public class OAuthGrantTypeAuthenticatorTests
 {
     private const string TestTokenUrl = "https://localhost:44322/connect/token";
+    private const string TestClientId = "TestClient";
     private const string TestApiKey = "sk_test_api_key_12345";
 
     [Fact]
@@ -20,8 +21,9 @@ public class OAuthGrantTypeAuthenticatorTests
         {
             ["tokenUrl"] = TestTokenUrl,
             ["grantType"] = "api_key",
+            ["clientId"] = TestClientId,
             ["api_key"] = TestApiKey,
-            ["scope"] = "Sneakinn"
+            ["scope"] = "test_scope"
         };
 
         // Act
@@ -92,8 +94,9 @@ public class OAuthGrantTypeAuthenticatorTests
         var authenticator = new OAuthGrantTypeAuthenticator(
             TestTokenUrl,
             "api_key",
+            TestClientId,
             new Dictionary<string, string> { ["api_key"] = TestApiKey },
-            "Sneakinn"
+            "test_scope"
         );
 
         // Use reflection to inject the mock HttpClient
@@ -101,7 +104,7 @@ public class OAuthGrantTypeAuthenticatorTests
             .GetField("_httpClient", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
         httpClientField?.SetValue(authenticator, httpClient);
 
-        var request = new HttpRequestMessage(HttpMethod.Get, "https://localhost:44322/api/app/order");
+        var request = new HttpRequestMessage(HttpMethod.Get, "https://localhost:44322/api/test");
 
         // Act
         await authenticator.AuthenticateRequestAsync(request);
@@ -142,8 +145,9 @@ public class OAuthGrantTypeAuthenticatorTests
         var authenticator = new OAuthGrantTypeAuthenticator(
             TestTokenUrl,
             "api_key",
+            TestClientId,
             new Dictionary<string, string> { ["api_key"] = TestApiKey },
-            "Sneakinn"
+            "test_scope"
         );
 
         // Use reflection to inject the mock HttpClient
@@ -190,8 +194,9 @@ public class OAuthGrantTypeAuthenticatorTests
         var authenticator = new OAuthGrantTypeAuthenticator(
             TestTokenUrl,
             "api_key",
+            TestClientId,
             new Dictionary<string, string> { ["api_key"] = TestApiKey },
-            "Sneakinn"
+            "test_scope"
         );
 
         // Use reflection to inject the mock HttpClient
@@ -218,6 +223,7 @@ public class OAuthGrantTypeAuthenticatorTests
         metadata.Name.ShouldBe("OAuth 2.0 Custom Grant Type Authentication");
         metadata.ConfigKeys.ShouldContain(k => k.Key == "tokenUrl" && k.IsRequired);
         metadata.ConfigKeys.ShouldContain(k => k.Key == "grantType" && k.IsRequired);
+        metadata.ConfigKeys.ShouldContain(k => k.Key == "clientId" && k.IsRequired);
         metadata.ConfigKeys.ShouldContain(k => k.Key == "scope" && !k.IsRequired);
     }
 
@@ -254,13 +260,14 @@ public class OAuthGrantTypeAuthenticatorTests
         var authenticator = new OAuthGrantTypeAuthenticator(
             TestTokenUrl,
             "phone_otp",
+            TestClientId,
             new Dictionary<string, string>
             {
                 ["phone_number"] = "+1234567890",
                 ["otp"] = "123456",
                 ["otp_id"] = "otp_session_123"
             },
-            "Sneakinn"
+            "test_scope"
         );
 
         // Use reflection to inject the mock HttpClient
@@ -283,7 +290,7 @@ public class OAuthGrantTypeAuthenticatorTests
         content.ShouldContain("phone_number=%2B1234567890");
         content.ShouldContain("otp=123456");
         content.ShouldContain("otp_id=otp_session_123");
-        content.ShouldContain("scope=Sneakinn");
+        content.ShouldContain("scope=test_scope");
     }
 
     [Fact]
@@ -319,8 +326,9 @@ public class OAuthGrantTypeAuthenticatorTests
         var authenticator = new OAuthGrantTypeAuthenticator(
             TestTokenUrl,
             "api_key",
+            TestClientId,
             new Dictionary<string, string> { ["api_key"] = TestApiKey },
-            "Sneakinn"
+            "test_scope"
         );
 
         // Use reflection to inject the mock HttpClient
@@ -328,8 +336,8 @@ public class OAuthGrantTypeAuthenticatorTests
             .GetField("_httpClient", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
         httpClientField?.SetValue(authenticator, httpClient);
 
-        var request1 = new HttpRequestMessage(HttpMethod.Get, "https://localhost:44322/api/app/order");
-        var request2 = new HttpRequestMessage(HttpMethod.Get, "https://localhost:44322/api/app/order");
+        var request1 = new HttpRequestMessage(HttpMethod.Get, "https://localhost:44322/api/test");
+        var request2 = new HttpRequestMessage(HttpMethod.Get, "https://localhost:44322/api/test");
 
         // Act
         await authenticator.AuthenticateRequestAsync(request1);
@@ -340,4 +348,6 @@ public class OAuthGrantTypeAuthenticatorTests
         request1.Headers.Authorization?.Parameter.ShouldBe("cached_token_12345");
         request2.Headers.Authorization?.Parameter.ShouldBe("cached_token_12345");
     }
+
+   
 }

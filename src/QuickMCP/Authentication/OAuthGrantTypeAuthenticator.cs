@@ -17,6 +17,7 @@ public class OAuthGrantTypeAuthenticator : IAuthenticator
     private readonly string _grantType;
     private readonly Dictionary<string, string> _grantParameters;
     private readonly string? _scope;
+    private readonly string? _clientId;
     private readonly HttpClient _httpClient;
     private readonly OAuthCache _tokenCache;
     public string Type => Metadata.Type;
@@ -40,7 +41,8 @@ public class OAuthGrantTypeAuthenticator : IAuthenticator
             "Supports any custom extension grant type that returns an access token.\n\n" +
             "Required Settings:\n" +
             "- tokenUrl: The OAuth token endpoint URL\n" +
-            "- grantType: The custom grant type name\n\n" +
+            "- grantType: The custom grant type name\n" +
+            "- clientId: The OAuth client ID\n\n" +
             "Optional Settings:\n" +
             "- scope: Access scope(s) to request\n\n" +
             "Grant-Specific Parameters:\n" +
@@ -53,7 +55,7 @@ public class OAuthGrantTypeAuthenticator : IAuthenticator
             "  - phone_number: The phone number\n" +
             "  - otp: The OTP code\n" +
             "  - otp_id: The OTP session ID\n\n" +
-            "Any settings other than 'tokenUrl', 'grantType', and 'scope' will be treated as grant parameters.";
+            "Any settings other than 'tokenUrl', 'grantType', 'clientId', and 'scope' will be treated as grant parameters.";
 
         const string type = "oAuthGrantType";
 
@@ -61,7 +63,8 @@ public class OAuthGrantTypeAuthenticator : IAuthenticator
         [
             ("tokenUrl", "The URL used to retrieve an access token (e.g., https://api.example.com/connect/token).", true),
             ("grantType", "The custom grant type name (e.g., 'api_key', 'phone_otp').", true),
-            ("scope", "Optional access scope (e.g., 'Sneakinn', 'api'). Multiple scopes can be space-separated.", false),
+            ("clientId", "The OAuth client ID (e.g., 'MyApp').", true),
+            ("scope", "Optional access scope (e.g., 'api', 'openid'). Multiple scopes can be space-separated.", false),
             ("{grant_params}", "Additional key-value pairs specific to your grant type. For example: 'api_key', 'phone_number', 'otp', etc.", false)
         ];
         return new AuthenticatorMetadata(name, description, configKeys, type);
@@ -76,26 +79,28 @@ public class OAuthGrantTypeAuthenticator : IAuthenticator
     public static IAuthenticator Create(Dictionary<string, string?> settings)
     {
         if (!settings.TryGetValue("tokenUrl", out var tokenUrl) ||
-            !settings.TryGetValue("grantType", out var grantType))
+            !settings.TryGetValue("grantType", out var grantType) ||
+            !settings.TryGetValue("clientId", out var clientId))
         {
             throw new ArgumentException(
-                "OAuth Grant Type authentication requires 'tokenUrl' and 'grantType' settings");
+                "OAuth Grant Type authentication requires 'tokenUrl', 'grantType', and 'clientId' settings");
         }
 
-        if (string.IsNullOrEmpty(tokenUrl) || string.IsNullOrEmpty(grantType))
+        if (string.IsNullOrEmpty(tokenUrl) || string.IsNullOrEmpty(grantType) || string.IsNullOrEmpty(clientId))
         {
             throw new ArgumentException(
-                "OAuth Grant Type authentication requires 'tokenUrl' and 'grantType' settings");
+                "OAuth Grant Type authentication requires 'tokenUrl', 'grantType', and 'clientId' settings");
         }
 
         settings.TryGetValue("scope", out var scope);
 
-        // Extract grant-specific parameters (all settings except tokenUrl, grantType, and scope)
+        // Extract grant-specific parameters (all settings except tokenUrl, grantType, clientId, and scope)
         var grantParameters = new Dictionary<string, string>();
         foreach (var setting in settings)
         {
             if (setting.Key != "tokenUrl" &&
                 setting.Key != "grantType" &&
+                setting.Key != "clientId" &&
                 setting.Key != "scope" &&
                 !string.IsNullOrEmpty(setting.Value))
             {
@@ -103,7 +108,7 @@ public class OAuthGrantTypeAuthenticator : IAuthenticator
             }
         }
 
-        return new OAuthGrantTypeAuthenticator(tokenUrl!, grantType!, grantParameters, scope);
+        return new OAuthGrantTypeAuthenticator(tokenUrl!, grantType!, clientId!, grantParameters, scope);
     }
 
     #endregion
@@ -115,19 +120,22 @@ public class OAuthGrantTypeAuthenticator : IAuthenticator
     /// </summary>
     /// <param name="tokenUrl">The URL used to retrieve an access token.</param>
     /// <param name="grantType">The custom grant type name (e.g., "api_key").</param>
+    /// <param name="clientId">The OAuth client ID.</param>
     /// <param name="grantParameters">Grant-specific parameters (e.g., { "api_key": "sk_xxx..." }).</param>
     /// <param name="scope">Optional access scope.</param>
     /// <exception cref="ArgumentNullException">
-    /// Thrown if <paramref name="tokenUrl"/> or <paramref name="grantType"/> is null.
+    /// Thrown if <paramref name="tokenUrl"/>, <paramref name="grantType"/>, or <paramref name="clientId"/> is null.
     /// </exception>
     public OAuthGrantTypeAuthenticator(
         string tokenUrl,
         string grantType,
+        string clientId,
         Dictionary<string, string> grantParameters,
         string? scope = null)
     {
         _tokenUrl = tokenUrl ?? throw new ArgumentNullException(nameof(tokenUrl));
         _grantType = grantType ?? throw new ArgumentNullException(nameof(grantType));
+        _clientId = clientId ?? throw new ArgumentNullException(nameof(clientId));
         _grantParameters = grantParameters ?? throw new ArgumentNullException(nameof(grantParameters));
         _scope = scope;
         _httpClient = new HttpClient();
@@ -192,7 +200,8 @@ public class OAuthGrantTypeAuthenticator : IAuthenticator
             // Build request for token with grant type and parameters
             var formData = new List<KeyValuePair<string, string>>
             {
-                new KeyValuePair<string, string>("grant_type", _grantType)
+                new KeyValuePair<string, string>("grant_type", _grantType),
+                new KeyValuePair<string, string>("client_id", _clientId!)
             };
 
             // Add grant-specific parameters
