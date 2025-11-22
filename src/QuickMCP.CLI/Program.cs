@@ -18,6 +18,11 @@ commandApp.Configure(app =>
         build.SetDescription("Build a MCP server configuration file and more");
         build.AddCommand<BuildConfigCommand>("config").WithAlias("config-file").WithAlias("config-file");
         build.AddCommand<BuildSpecCommand>("spec").WithExample("build spec", "-d url_to_documentation");
+        build.AddCommand<BuildClaudeExtensionCommand>("ce")
+            .WithAlias("claude-extension")
+            .WithAlias("claude")
+            .WithDescription("Build a Claude Desktop extension (.mcpb)")
+            .WithExample("build ce", "-s https://api.example.com/swagger.json -n MyAPI");
     });
     
     app.AddBranch<ListCommandSettings>("list", list =>
