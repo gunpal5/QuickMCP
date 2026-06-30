@@ -35,6 +35,7 @@ public class McpServerInfoBuilderTests
     [InlineData("recraft.yaml","https://example.com/")]
     [InlineData("luma.yaml","https://example.com/")]
     [InlineData("maven.json","https://example.com/")]
+    [InlineData("xquik.json","https://xquik.com/")]
     public async Task OpenApiTest(string fileName,string baseUrl)
     {
         var path = $"specs/{fileName}";
