@@ -109,6 +109,36 @@ public class McpToolTests
         (thirdResult.Content[0] as TextContentBlock)?.Text.ShouldContain("Buddy");
     }
 
+    [Fact]
+    public async Task ShouldCallMcpTool_Post_WithListBody()
+    {
+        var builder = await McpServerInfoBuilder.ForOpenApi("Test_Server")
+            .FromUrl("https://petstore.swagger.io/v2/swagger.json").OnlyForPaths(["user"]).BuildAsync();
+        var tools = builder.GetMcpTools().ToList();
+
+        //Post
+        var third = tools.FirstOrDefault(s => s.ProtocolTool.Name.Contains("createUsersWithListInput", StringComparison.OrdinalIgnoreCase));
+        var mockServer = new Mock<McpServer>().Object;
+        var jsonRpcRequest = new JsonRpcRequest { Method = "tools/call", Id = new RequestId("test-1") };
+        var context = new RequestContext<CallToolRequestParams>(mockServer, jsonRpcRequest);
+        context.Params = new CallToolRequestParams()
+        {
+            Name = third.ProtocolTool.Name,
+            Arguments = new Dictionary<string, JsonElement>()
+            {
+                ["body"] = JsonDocument
+                        .Parse(
+                            "[{\n    \"id\": 100,\n    \"username\": \"john_doe\",\n    \"firstName\": \"John\",\n    \"lastName\": \"Doe\",\n    \"email\": \"johndoe@example.com\",\n    \"password\": \"test\",\n    \"phone\": \"+1234567890\",\n    \"userStatus\": 0\n  }]")
+                        .RootElement
+            }
+        };
+
+        var thirdResult = await third.InvokeAsync(context);
+
+        thirdResult.Content.ShouldNotBeNull();
+        (thirdResult.Content[0] as TextContentBlock)?.Text.ShouldContain("ok");
+    }
+
     // [Fact]
     // public async Task ShouldCallMcpTool_Post_WithBody_Sneakinn()
     // {
