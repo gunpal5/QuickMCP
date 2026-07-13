@@ -184,7 +184,7 @@ public class HttpApiCaller
     {
         if (content != null)
         {
-            if (content.ContainsKey("body"))
+            if (content.ContainsKey("body") && content["body"].ValueKind == JsonValueKind.Object)
             {
                 content = content["body"].EnumerateObject().ToDictionary(x => x.Name, x => x.Value);
             }
@@ -206,11 +206,18 @@ public class HttpApiCaller
             }
             else if (mimeType == "application/json" || string.IsNullOrEmpty(mimeType))
             {
-                request.Content =
-                    new StringContent(
-                        JsonSerializer.Serialize(content,
-                            QuickMcpJsonSerializerContext.Default.DictionaryStringJsonElement),
-                        Encoding.UTF8, mimeType);
+                var jsonContent = string.Empty;
+                if (content.ContainsKey("body") && content.Count == 1 && content["body"].ValueKind == JsonValueKind.Array)
+                {
+                    jsonContent = JsonSerializer.Serialize(content["body"],
+                            QuickMcpJsonSerializerContext.Default.JsonElement);
+                }
+                else
+                {
+                    jsonContent = JsonSerializer.Serialize(content,
+                            QuickMcpJsonSerializerContext.Default.DictionaryStringJsonElement);
+                }
+                request.Content = new StringContent(jsonContent, Encoding.UTF8, mimeType);
 
             }
             else throw new Exception($"Unsupported mime type {mimeType}");
